@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { Adjustments, HistogramData } from '../types';
-import { applyAdjustments, applySharpen } from '../lib/imageProcessor';
+import { applyAdjustments, applySharpen, getCropRect } from '../lib/imageProcessor';
 
 interface PhotoCanvasProps {
   imageUrl: string;
@@ -12,14 +12,10 @@ interface PhotoCanvasProps {
 }
 
 // Global cache for preview image data to avoid re-decoding
-const previewCache = new Map<string, {
-    img: HTMLImageElement;
-    origPixels: Uint8ClampedArray;
-    width: number;
-    height: number;
-}>();
+const previewCache = new Map<string, HTMLImageElement>();
+const pixelsCache = new Map<string, { origPixels: Uint8ClampedArray, width: number, height: number }>();
 
-export function PhotoCanvas({ imageUrl, adjustments, isBeforeView, scale = 1, pan = { x: 0, y: 0 } }: PhotoCanvasProps) {
+export function PhotoCanvas({ imageUrl, adjustments, isBeforeView, scale = 1, pan = { x: 0, y: 0 }, onHistogramUpdate }: PhotoCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = useState(false);
@@ -29,35 +25,14 @@ export function PhotoCanvas({ imageUrl, adjustments, isBeforeView, scale = 1, pa
   useEffect(() => {
     let active = true;
     const loadImg = async () => {
-      if (previewCache.has(imageUrl)) {
-        setLoaded(true);
-        return;
+      let img = previewCache.get(imageUrl);
+      if (!img) {
+        img = new Image();
+        img.src = imageUrl;
+        await new Promise(res => { img!.onload = res; });
+        if (!active) return;
+        previewCache.set(imageUrl, img);
       }
-      
-      const img = new Image();
-      img.src = imageUrl;
-      await new Promise(res => { img.onload = res; });
-      if (!active) return;
-      
-      // Target max resolution for the "preview" canvas to stay fast (e.g. 1920x1080 bounding box)
-      const MAX_DEV_SIZE = 1920;
-      let w = img.width;
-      let h = img.height;
-      
-      if (w > MAX_DEV_SIZE || h > MAX_DEV_SIZE) {
-        const ratio = Math.min(MAX_DEV_SIZE / w, MAX_DEV_SIZE / h);
-        w = Math.round(w * ratio);
-        h = Math.round(h * ratio);
-      }
-      
-      const tmpCanvas = document.createElement('canvas');
-      tmpCanvas.width = w;
-      tmpCanvas.height = h;
-      const ctx = tmpCanvas.getContext('2d', { willReadFrequently: true })!;
-      ctx.drawImage(img, 0, 0, w, h);
-      
-      const origPixels = ctx.getImageData(0, 0, w, h).data;
-      previewCache.set(imageUrl, { img, origPixels, width: w, height: h });
       setLoaded(true);
     };
     
@@ -73,8 +48,36 @@ export function PhotoCanvas({ imageUrl, adjustments, isBeforeView, scale = 1, pa
     // We throttle adjustment processing to animation frames
     processFrameRef.current = requestAnimationFrame(() => {
       const canvas = canvasRef.current;
-      const cached = previewCache.get(imageUrl);
-      if (!canvas || !cached) return;
+      const img = previewCache.get(imageUrl);
+      if (!canvas || !img) return;
+
+      const cropRatioStr = adjustments.cropRatio || 'Original';
+      const cacheKey = `${imageUrl}_${cropRatioStr}`;
+      
+      let cached = pixelsCache.get(cacheKey);
+      
+      if (!cached) {
+        const { x: cx, y: cy, w: cw, h: ch } = getCropRect(img.width, img.height, cropRatioStr);
+        const MAX_DEV_SIZE = 1920;
+        let renderW = cw;
+        let renderH = ch;
+        if (renderW > MAX_DEV_SIZE || renderH > MAX_DEV_SIZE) {
+          const ratio = Math.min(MAX_DEV_SIZE / renderW, MAX_DEV_SIZE / renderH);
+          renderW = Math.round(renderW * ratio);
+          renderH = Math.round(renderH * ratio);
+        }
+        
+        const tmpCanvas = document.createElement('canvas');
+        tmpCanvas.width = renderW;
+        tmpCanvas.height = renderH;
+        const ctx = tmpCanvas.getContext('2d', { willReadFrequently: true })!;
+        ctx.drawImage(img, cx, cy, cw, ch, 0, 0, renderW, renderH);
+        const origPixels = ctx.getImageData(0, 0, renderW, renderH).data;
+        
+        cached = { origPixels, width: renderW, height: renderH };
+        pixelsCache.set(cacheKey, cached);
+      }
+      
       const { origPixels, width, height } = cached;
       
       if (canvas.width !== width || canvas.height !== height) {

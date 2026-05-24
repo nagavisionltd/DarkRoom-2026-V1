@@ -1,6 +1,24 @@
 import { Adjustments } from '../types';
 import { clamp } from './colorUtils';
 
+export function getCropRect(origW: number, origH: number, ratioStr: string) {
+  if (ratioStr === 'Original' || !ratioStr) return { x: 0, y: 0, w: origW, h: origH };
+  const [rw, rh] = ratioStr.split(':').map(Number);
+  const targetRatio = rw / rh;
+  const origRatio = origW / origH;
+  
+  let cw = origW;
+  let ch = origH;
+  if (origRatio > targetRatio) {
+    cw = Math.round(origH * targetRatio);
+  } else {
+    ch = Math.round(origW / targetRatio);
+  }
+  const cx = Math.round((origW - cw) / 2);
+  const cy = Math.round((origH - ch) / 2);
+  return { x: cx, y: cy, w: cw, h: ch };
+}
+
 export function applyAdjustments(
   originalData: Uint8ClampedArray,
   targetData: Uint8ClampedArray,

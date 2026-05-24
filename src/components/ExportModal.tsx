@@ -6,13 +6,14 @@ import { cn } from '../lib/utils';
 
 interface ExportModalProps {
   onClose: () => void;
-  onExport: (quality: number, selectedIds: string[]) => void;
+  onExport: (quality: number, selectedIds: string[], mode: 'zip' | 'individual') => void;
   images: ImageRecord[];
   currentImageId?: string;
 }
 
 export function ExportModal({ onClose, onExport, images, currentImageId }: ExportModalProps) {
   const [quality, setQuality] = useState(90);
+  const [exportMode, setExportMode] = useState<'zip' | 'individual'>('zip');
   
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     new Set(currentImageId ? [currentImageId] : images.map(i => i.id))
@@ -83,13 +84,43 @@ export function ExportModal({ onClose, onExport, images, currentImageId }: Expor
               tooltip="Higher quality results in better image clarity but larger file sizes."
             />
           </div>
+
+          {selectedIds.size > 1 && (
+            <div className="bg-neutral-900 border border-neutral-800 p-4 rounded-lg flex flex-col gap-3">
+              <label className="text-sm text-neutral-300 font-medium">Export Mode ({selectedIds.size} files)</label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 text-sm text-neutral-400 cursor-pointer hover:text-white transition-colors">
+                  <input 
+                    type="radio" 
+                    name="exportMode" 
+                    value="zip" 
+                    checked={exportMode === 'zip'} 
+                    onChange={() => setExportMode('zip')}
+                    className="accent-rose-500"
+                  />
+                  <span>As single ZIP file</span>
+                </label>
+                <label className="flex items-center gap-2 text-sm text-neutral-400 cursor-pointer hover:text-white transition-colors">
+                  <input 
+                    type="radio" 
+                    name="exportMode" 
+                    value="individual" 
+                    checked={exportMode === 'individual'} 
+                    onChange={() => setExportMode('individual')}
+                    className="accent-rose-500"
+                  />
+                  <span>As individual JPEG files</span>
+                </label>
+              </div>
+            </div>
+          )}
         </div>
         <div className="p-4 border-t border-neutral-800 bg-neutral-900/50 flex justify-between items-center shrink-0">
           <span className="text-sm text-neutral-500">{selectedIds.size} file{selectedIds.size !== 1 ? 's' : ''} selected</span>
           <div className="flex gap-3">
             <button onClick={onClose} className="px-4 py-2 text-sm text-neutral-400 hover:text-white font-medium">Cancel</button>
             <button 
-              onClick={() => onExport(quality, Array.from(selectedIds))} 
+              onClick={() => onExport(quality, Array.from(selectedIds), exportMode)} 
               disabled={selectedIds.size === 0}
               className={cn(
                 "px-4 py-2 text-sm text-white font-medium rounded-md shadow-lg flex items-center gap-2 transition-all",

@@ -7,10 +7,11 @@ import { MobileControls } from './components/MobileControls';
 import { PhotoCanvas } from './components/PhotoCanvas';
 import { Filmstrip } from './components/Filmstrip';
 import { ExportModal } from './components/ExportModal';
-import { applyAdjustments, applySharpen } from './lib/imageProcessor';
+import { applyAdjustments, applySharpen, getCropRect } from './lib/imageProcessor';
 import { Upload } from 'lucide-react';
 import { cn } from './lib/utils';
 import { useWindowSize } from 'react-use';
+import JSZip from 'jszip';
 
 export default function App() {
   const [state, setState] = useState<EditorState>({
@@ -196,23 +197,31 @@ export default function App() {
     setState(s => ({ ...s, presets: s.presets.filter((p: Preset) => p.id !== id) }));
   };
 
-  const processExport = async (quality: number, selectedIds: string[]) => {
+  const processExport = async (quality: number, selectedIds: string[], exportMode: 'zip' | 'individual' = 'zip') => {
      setExportModalOpen(false);
      setIsExporting(true);
      
      const targets = state.images.filter(img => selectedIds.includes(img.id));
      
      try {
+       let zip: JSZip | null = null;
+       if (exportMode === 'zip' && targets.length > 1) {
+         zip = new JSZip();
+       }
+
        for (const imgRec of targets) {
          const img = new Image();
          img.src = imgRec.url;
          await new Promise(res => { img.onload = res; });
          
+         const cropRatioStr = imgRec.adjustments.cropRatio || 'Original';
+         const { x: cx, y: cy, w: cw, h: ch } = getCropRect(img.width, img.height, cropRatioStr);
+
          const canvas = document.createElement('canvas');
-         canvas.width = img.width;
-         canvas.height = img.height;
+         canvas.width = cw;
+         canvas.height = ch;
          const ctx = canvas.getContext('2d')!;
-         ctx.drawImage(img, 0, 0);
+         ctx.drawImage(img, cx, cy, cw, ch, 0, 0, cw, ch);
          
          let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
          applyAdjustments(imgData.data, imgData.data, canvas.width, canvas.height, imgRec.adjustments);
@@ -222,18 +231,32 @@ export default function App() {
          await new Promise<void>(resolve => {
             canvas.toBlob((blob) => {
                if(blob) {
-                 const url = URL.createObjectURL(blob);
-                 const a = document.createElement('a');
-                 a.href = url;
-                 a.download = `DR_${imgRec.name}`;
-                 a.click();
-                 URL.revokeObjectURL(url);
+                 if (zip) {
+                   zip.file(`DR_${imgRec.name}`, blob);
+                 } else {
+                   const url = URL.createObjectURL(blob);
+                   const a = document.createElement('a');
+                   a.href = url;
+                   a.download = `DR_${imgRec.name}`;
+                   a.click();
+                   URL.revokeObjectURL(url);
+                 }
                }
                resolve();
             }, 'image/jpeg', quality / 100);
          });
          
-         if (targets.length > 1) await new Promise(r => setTimeout(r, 300));
+         if (targets.length > 1 && !zip) await new Promise(r => setTimeout(r, 300));
+       }
+
+       if (zip) {
+         const zipBlob = await zip.generateAsync({ type: 'blob' });
+         const url = URL.createObjectURL(zipBlob);
+         const a = document.createElement('a');
+         a.href = url;
+         a.download = `Darkroom_Export_${new Date().getTime()}.zip`;
+         a.click();
+         URL.revokeObjectURL(url);
        }
      } catch(e) {
        console.error(e);
@@ -273,6 +296,8 @@ export default function App() {
         onPasteSettings={handlePasteSettings}
         canCopy={!!currentImg}
         canPaste={!!state.copiedSettings && !!currentImg}
+        currentCropRatio={adjustments.cropRatio || 'Original'}
+        onCropChange={(ratio) => updateAdjustment('cropRatio', ratio)}
       />
 
       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleImport} />

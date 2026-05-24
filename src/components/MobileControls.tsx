@@ -19,10 +19,17 @@ export function MobileControls({ adjustments, onChange, isOpen, setIsOpen, prese
 
   const TabBtn = ({ id, icon, label }: any) => (
     <button 
-      onClick={() => setActiveTab(id)}
+      onClick={() => {
+        if (activeTab === id && isOpen) {
+          setIsOpen(false);
+        } else {
+          setActiveTab(id);
+          setIsOpen(true);
+        }
+      }}
       className={cn(
         "flex-1 py-3 flex flex-col items-center justify-center gap-1 transition-colors border-t-2",
-        activeTab === id ? "border-rose-500 text-rose-500" : "border-transparent text-neutral-400 hover:text-neutral-200"
+        activeTab === id && isOpen ? "border-rose-500 text-rose-500" : "border-transparent text-neutral-400 hover:text-neutral-200"
       )}
     >
       {icon}
@@ -31,14 +38,19 @@ export function MobileControls({ adjustments, onChange, isOpen, setIsOpen, prese
   );
 
   return (
-    <div className="md:hidden flex flex-col shrink-0 bg-[#111111] border-t border-neutral-800 z-30 transition-all duration-300 w-full relative">
-      
-      {isOpen && (
-        <div className="h-[260px] overflow-y-auto overflow-x-hidden p-5 flex flex-col gap-6 custom-scrollbar pb-10 relative">
+    <>
+      {/* Sliding Panel */}
+      <div 
+        className={cn(
+          "md:hidden fixed bottom-[64px] left-0 right-0 bg-[#111111] border-t border-neutral-800 transition-all duration-300 z-40 shadow-[0_-20px_50px_rgba(0,0,0,0.6)] rounded-t-2xl overflow-hidden",
+          isOpen ? "translate-y-0 opacity-100 pointer-events-auto" : "translate-y-full opacity-0 pointer-events-none"
+        )}
+      >
+        <div className="h-[280px] overflow-y-auto overflow-x-hidden p-5 flex flex-col gap-6 custom-scrollbar pb-6 relative">
           
           <button 
             onClick={() => setIsOpen(false)}
-            className="absolute top-2 right-2 p-2 bg-neutral-900 rounded-full text-neutral-400 hover:text-white border border-neutral-800"
+            className="absolute top-3 right-3 p-2 bg-neutral-900 rounded-full text-neutral-400 hover:text-white border border-neutral-800 z-10"
           >
             <X className="w-4 h-4" />
           </button>
@@ -90,10 +102,10 @@ export function MobileControls({ adjustments, onChange, isOpen, setIsOpen, prese
             </div>
           )}
         </div>
-      )}
+      </div>
 
       {/* Persistent Tab Bar */}
-      <div className="flex items-center w-full bg-[#141414] border-t border-neutral-800 h-16 px-2 shrink-0">
+      <div className="md:hidden flex items-center w-full bg-[#141414] border-t border-neutral-800 h-16 px-2 shrink-0 z-50">
         <TabBtn id="presets" icon={<Sliders className="w-5 h-5" />} label="Presets" />
         <TabBtn id="light" icon={<Sun className="w-5 h-5" />} label="Light" />
         <TabBtn id="color" icon={<Palette className="w-5 h-5" />} label="Color" />
@@ -106,7 +118,6 @@ export function MobileControls({ adjustments, onChange, isOpen, setIsOpen, prese
           <span className="text-[10px] font-medium uppercase tracking-wide">Adjust</span>
         </button>
       </div>
-
-    </div>
+    </>
   );
 }

@@ -11,6 +11,7 @@ export interface Adjustments {
   tint: number;
   clarity: number;
   sharpness: number;
+  cropRatio: 'Original' | '1:1' | '4:3' | '16:9' | '3:4' | '9:16';
 }
 
 export const defaultAdjustments: Adjustments = {
@@ -26,6 +27,7 @@ export const defaultAdjustments: Adjustments = {
   tint: 0,
   clarity: 0,
   sharpness: 0,
+  cropRatio: 'Original',
 };
 
 export interface HistogramData {
