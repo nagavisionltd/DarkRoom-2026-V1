@@ -1,0 +1,6 @@
+{
+  "name": "DarkRoom",
+  "description": "Premium Lightroom-inspired photo editor.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
