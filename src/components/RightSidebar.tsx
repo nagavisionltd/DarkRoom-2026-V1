@@ -12,19 +12,19 @@ interface RightSidebarProps {
   histogramData?: import('../types').HistogramData | null;
 }
 
-export function RightSidebar({ adjustments, onChange, onReset, histogramData }: RightSidebarProps) {
-  
-  const PanelSection = ({ title, icon, children }: { title: string, icon: React.ReactNode, children: React.ReactNode }) => (
-    <div className="mb-6 pb-6 border-b border-neutral-800 last:border-b-0">
-      <div className="flex items-center gap-2 mb-4 text-neutral-100 font-semibold tracking-wide uppercase text-[11px]">
-        {icon}
-        {title}
-      </div>
-      <div className="flex flex-col gap-5">
-        {children}
-      </div>
+const PanelSection = ({ title, icon, children }: { title: string, icon: React.ReactNode, children: React.ReactNode }) => (
+  <div className="mb-6 pb-6 border-b border-neutral-800 last:border-b-0">
+    <div className="flex items-center gap-2 mb-4 text-neutral-100 font-semibold tracking-wide uppercase text-[11px]">
+      {icon}
+      {title}
     </div>
-  );
+    <div className="flex flex-col gap-5">
+      {children}
+    </div>
+  </div>
+);
+
+export function RightSidebar({ adjustments, onChange, onReset, histogramData }: RightSidebarProps) {
 
   return (
     <div className="w-[320px] h-full bg-[#111111] overflow-y-auto border-l border-neutral-800 flex flex-col shrink-0 custom-scrollbar relative z-10">

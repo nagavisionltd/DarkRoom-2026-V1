@@ -58,7 +58,7 @@ export function PhotoCanvas({ imageUrl, adjustments, isBeforeView, scale = 1, pa
       
       if (!cached) {
         const { x: cx, y: cy, w: cw, h: ch } = getCropRect(img.width, img.height, cropRatioStr);
-        const MAX_DEV_SIZE = 1920;
+        const MAX_DEV_SIZE = 600;
         let renderW = cw;
         let renderH = ch;
         if (renderW > MAX_DEV_SIZE || renderH > MAX_DEV_SIZE) {

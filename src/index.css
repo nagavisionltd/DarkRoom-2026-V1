@@ -38,3 +38,72 @@ body {
 .animate-film-slide {
   animation: film-slide 1s linear infinite;
 }
+
+/* Custom Native Range Slider for Darkroom */
+.darkroom-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 24px;
+  background: transparent;
+  outline: none;
+  margin: 0;
+  padding: 0;
+  cursor: ew-resize;
+  position: relative;
+  z-index: 20;
+}
+
+/* Chrome/Safari Track */
+.darkroom-range::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  background: var(--slider-track-bg, #262626);
+  border-radius: 9999px;
+  border: none;
+}
+
+/* Firefox Track */
+.darkroom-range::-moz-range-track {
+  width: 100%;
+  height: 4px;
+  background: var(--slider-track-bg, #262626);
+  border-radius: 9999px;
+  border: none;
+}
+
+/* Chrome/Safari Thumb */
+.darkroom-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  margin-top: -6px; /* center vertically (width 16px, track 4px) */
+  cursor: ew-resize;
+  transition: transform 75ms ease-out;
+}
+
+.darkroom-range:active::-webkit-slider-thumb {
+  transform: scale(1.2) !important;
+}
+
+/* Firefox Thumb */
+.darkroom-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  cursor: ew-resize;
+  transition: transform 75ms ease-out;
+  border: none;
+}
+
+.darkroom-range:active::-moz-range-thumb {
+  transform: scale(1.2) !important;
+}
